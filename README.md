@@ -1,18 +1,11 @@
-# Bahnhofsquartett
+# PokeTrumps
 
-Bahnhofsquartett is an automatically-generated "Quartett" game based on
+Based on: Bahnhofsquartett, an automatically-generated "Quartett" game based on
 open data from Deutsche Bahn and Wikimedia Commons.
 
-![Bahnhofsquartett](https://raw.github.com/pbock/bahnhofsquartett/master/src/Bahnhofsquartett.jpg)
+Uses PokeAPI to generate quartett / top trumps cards.
+It's pretty easy to customize to have other pokemon, just edit the pokemon.yaml file.
 
-Most of the code came to life between 11pm and 5am at #dbhackathon in December
-2015, and it certainly looks the part. Still, if you're brave enough to want
-to customise it, the values on the cards are generated in `bin/index.js` and
-the drawing happens in `bin/lib/card-generator.js`.
-
-Code by [@bockph](https://twitter.com/bockph),
-with contributions from [@tbsprs](https://twitter.com/tbsprs) and
-[@ubahnverleih](https://twitter.com/ubahnverleih).
 
 ## Requirements
 
@@ -34,9 +27,6 @@ npm run build
 
 The code is licensed under the [MIT License](LICENSE.md).
 
-[Fira Sans](https://github.com/mozilla/Fira) is Copyright 2012-2015,
-The Mozilla Foundation and Telefonica S.A.; licensed under the [SIL Open Font
-License](https://github.com/mozilla/Fira/blob/master/LICENSE).
 
 The data was extracted from the data sets published at
 [data.deutschebahn.com](http://data.deutschebahn.com), licensed under
