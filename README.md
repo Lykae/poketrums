@@ -26,10 +26,3 @@ npm run build
 ## Licence
 
 The code is licensed under the [MIT License](LICENSE.md).
-
-
-The data was extracted from the data sets published at
-[data.deutschebahn.com](http://data.deutschebahn.com), licensed under
-[CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/),
-as well as data from the OpenStreetMap contributors,
-licensed under the [ODbL](http://opendatacommons.org/licenses/odbl/).
