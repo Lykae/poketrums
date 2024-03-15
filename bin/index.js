@@ -1,11 +1,17 @@
 'use strict';
 
+async function main() {
+
 const async = require('async');
 const pr = require('path').resolve;
 const fs = require('fs');
 const _ = require('lodash');
 
+
+const YAML = require('js-yaml');
+
 const pdf = require('./lib/card-generator')();
+const findPokemon = require('./lib/find-pokemon');
 
 const SRC_DIR = pr(__dirname, '../src');
 const DATA_DIR = pr(SRC_DIR, 'data');
@@ -19,95 +25,69 @@ try {
   if (e.code !== 'EEXIST') throw e;
 }
 
-let stations = JSON.parse(fs.readFileSync(pr(DATA_DIR, 'stations.json')));
+let pokemonYaml = YAML.safeLoad(fs.readFileSync(pr(DATA_DIR, 'pokemon.yaml')));
+let pokeList = [];
+
+async function fillPokeList() {
+  for (const [pokeName, pokeType] of Object.entries(pokemonYaml)) {
+    await new Promise((resolve, reject) => {
+      findPokemon(pokeName).then(data => {
+        let pokemon = data.metadata;
+        pokemon.image = data.image;
+        pokemon.imageDimensions = data.dimensions;
+        pokemon.gameType = pokeType;
+        pokeList.push(pokemon);
+        resolve();
+      }).catch(err => { throw err });
+   }).catch(error => console.error(error));
+  }
+}
+await fillPokeList();
+
+console.log("length -> " + pokeList.length);
+
 let categories = [
   {
-    name: 'Anzahl der Bahnsteige',
-    find: station => station.platforms.length,
-    reverse: true,
+    name: 'HP',
+    find: mon => mon.hp,
   },
   {
-    name: 'Längster Bahnsteig',
-    find: station => _(station.platforms).map('length').max() || 0,
-    format: n => n.toFixed(2).replace('.', ',') + ' m',
-    reverse: true,
+    name: 'Attack',
+    find: mon => mon.atk,
   },
   {
-    name: 'Höchster Bahnsteig',
-    find: station => _(station.platforms).map('height').max() || 0,
-    format: n => n.toFixed(2).replace('.', ',') + ' m',
-    reverse: true,
+    name: 'Defense',
+    find: mon => mon.def,
   },
   {
-    name: 'Bahnhofskategorie',
-    find: n => n.category,
+    name: 'Special Attack',
+    find: mon => mon.spatk,
   },
   {
-    name: 'Anzahl der Aufzüge',
-    find: n => n.elevators.length,
-    reverse: true,
+    name: 'Special Defense',
+    find: mon => mon.spdef,
   },
   {
-    name: 'Ältester Aufzug',
-    find: n => _(n.elevators).map(e => +e.year).filter().min(),
-    filter: n => n.elevators.length,
-    format: n => (n === Infinity || n === undefined) ? '—' : n,
-  },
-  {
-    name: 'Größte Aufzugskabine',
-    find: n => _(n.elevators).map(e => e.cabin.width * e.cabin.depth * e.cabin.height / 1e9).filter(n => n < 100).max(),
-    reverse: true,
-    format: n => (n > 0) ? n.toFixed(1).replace('.', ',') + ' m³' : '—',
-  },
-  {
-    name: 'Anschluss an eine Fähre',
-    find: n => n.ferryNearby,
-    reverse: true,
-    format: n => n ? 'ja' : 'nein',
+    name: 'Speed',
+    find: mon => mon.spe,
   }
-  /*{
-    name: 'Höchster Aufzugschacht',
-    find: n => _(n.elevators).map(e => e.wellHeight).filter().max(),
-    format: n => (n > 0) ? n.toFixed(2).replace('.', ',') + ' m' : '—',
-    reverse: true,
-  },
-  {
-    name: 'Höchster Aufzugschacht',
-    find: n => _(n.elevators).map(e => +e.wellHeight).filter().max(),
-    reverse: true,
-    format: n => n === -Infinity ? '—' : n.toFixed(2).replace('.', ',') + ' m',
-  },*/
 ];
 
-let cards = new Set();
-
-let potentialCards = categories.map(category => {
-  let filter = category.filter || (() => true);
-  let results = _(stations).filter(filter).sortBy(category.find);
-  if (category.reverse) results = results.reverse();
-  return results.value();
-});
-
-while (cards.size < potentialCards.length * 4) {
-  let group = cards.size % potentialCards.length;
-  let card = potentialCards[group].shift();
-  cards.add(card);
-}
-
-cards = _(Array.from(cards)).sortBy(s => s.state).value();
+let cards = _(Array.from(pokeList)).sortBy(mon => mon.gameType).value();
 
 let i = 0;
-async.eachLimit(cards, 1, (station, cardDone) => {
+async.eachLimit(cards, 1, (mon, cardDone) => {
   let cardID = ALPHABET[i / 4 | 0] + (i % 4 + 1);
-  console.log(cardID, station.name);
+  console.log(cardID, mon.name);
   let card = {
-    name: station.name,
+    name: mon.displayName,
     id: cardID,
     values: [],
+    mon: mon
   };
   categories.forEach(category => {
     let format = category.format || _.identity;
-    card.values.push({ name: category.name, value: format(category.find(station)) });
+    card.values.push({ name: category.name, value: format(category.find(mon)) });
   });
 
   pdf.add(card).then(cardDone)
@@ -120,3 +100,7 @@ async.eachLimit(cards, 1, (station, cardDone) => {
   pdf.end();
   pdf.doc.pipe(fs.createWriteStream(pr(DEST_DIR, 'output.pdf')));
 });
+
+}
+
+main();
